@@ -2,6 +2,8 @@ import { PerformanceForm } from "./performance-form";
 import { predictStudentPerformance } from "@/ai/flows/predict-student-performance";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cpu } from "lucide-react";
+import { studentData } from "@/data/student-data";
+
 
 export default function CalculatorPage() {
   return (
@@ -13,13 +15,16 @@ export default function CalculatorPage() {
             <div>
               <CardTitle className="text-2xl font-headline">AI Performance Calculator</CardTitle>
               <CardDescription>
-                Input student scores and efficiency to get an AI-powered performance prediction and improvement plan.
+                Select a student to load their data and get an AI-powered performance prediction.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <PerformanceForm predictStudentPerformance={predictStudentPerformance} />
+          <PerformanceForm 
+            predictStudentPerformance={predictStudentPerformance}
+            studentData={studentData}
+          />
         </CardContent>
       </Card>
     </div>

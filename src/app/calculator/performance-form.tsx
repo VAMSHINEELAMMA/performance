@@ -9,23 +9,10 @@ import { z } from "zod";
 import type { PredictStudentPerformanceInput, PredictStudentPerformanceOutput } from "@/ai/flows/predict-student-performance";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Lightbulb, TrendingUp } from "lucide-react";
-
-// Mock data fetching, in a real app this would come from an API or a global state
-const getAverageScores = () => {
-    // These would be fetched based on the logged-in user
-    const mockAssessmentScores = [88, 92]; // From submitted assessments
-    const mockProjectScores = [85, 95, 90]; // Assuming some project scores exist
-
-    const average = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 80;
-    
-    return {
-        assessmentScore: average(mockAssessmentScores),
-        projectScore: average(mockProjectScores),
-    };
-};
+import { Loader2, Sparkles, Lightbulb, TrendingUp, User, Building } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { StudentData } from "@/data/student-data";
 
 
 const formSchema = z.object({
@@ -39,35 +26,39 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface PerformanceFormProps {
   predictStudentPerformance: (input: PredictStudentPerformanceInput) => Promise<PredictStudentPerformanceOutput>;
+  studentData: StudentData;
 }
 
-export function PerformanceForm({ predictStudentPerformance }: PerformanceFormProps) {
+export function PerformanceForm({ predictStudentPerformance, studentData }: PerformanceFormProps) {
   const [prediction, setPrediction] = useState<PredictStudentPerformanceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { control, handleSubmit, watch, reset } = useForm<FormValues>({
+  const [selectedDept, setSelectedDept] = useState<string>("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+
+  const { control, handleSubmit, watch, reset, getValues } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      assessmentScore: 80,
-      projectScore: 75,
-      feedbackScore: 90,
-      efficiency: 85,
+      assessmentScore: 0,
+      projectScore: 0,
+      feedbackScore: 0,
+      efficiency: 0,
     },
   });
 
-  useEffect(() => {
-    const avgScores = getAverageScores();
-    reset({
-        assessmentScore: Math.round(avgScores.assessmentScore),
-        projectScore: Math.round(avgScores.projectScore),
-        feedbackScore: 90, // Keep feedback and efficiency as adjustable params
-        efficiency: 85,
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-
   const formValues = watch();
+
+  useEffect(() => {
+    if (selectedDept && selectedStudentId) {
+      const student = studentData[selectedDept]?.find(s => s.id === selectedStudentId);
+      if (student) {
+        reset(student.scores);
+      }
+    } else {
+      reset({ assessmentScore: 0, projectScore: 0, feedbackScore: 0, efficiency: 0 });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStudentId, selectedDept, reset]);
+
 
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
@@ -75,46 +66,68 @@ export function PerformanceForm({ predictStudentPerformance }: PerformanceFormPr
     try {
       const result = await predictStudentPerformance(data);
       setPrediction(result);
-    } catch (error) {
+    } catch (error) => {
       console.error("Prediction failed:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDepartmentChange = (dept: string) => {
+    setSelectedDept(dept);
+    setSelectedStudentId(""); // Reset student selection
+    reset({ assessmentScore: 0, projectScore: 0, feedbackScore: 0, efficiency: 0 });
+  };
+  
+  const studentsInDept = studentData[selectedDept] || [];
+
   return (
     <div className="space-y-8">
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+         <div className="grid gap-2">
+            <Label htmlFor="department" className="flex items-center gap-2"><Building className="h-4 w-4" /> Department</Label>
+            <Select onValueChange={handleDepartmentChange} value={selectedDept}>
+                <SelectTrigger id="department">
+                    <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                    {Object.keys(studentData).map(dept => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+         </div>
+         <div className="grid gap-2">
+            <Label htmlFor="student" className="flex items-center gap-2"><User className="h-4 w-4" /> Student</Label>
+            <Select onValueChange={setSelectedStudentId} value={selectedStudentId} disabled={!selectedDept}>
+                <SelectTrigger id="student">
+                    <SelectValue placeholder="Select a student" />
+                </SelectTrigger>
+                <SelectContent>
+                    {studentsInDept.map(student => (
+                        <SelectItem key={student.id} value={student.id}>{student.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+         </div>
+      </div>
+      
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-8">
-            {Object.keys(formValues).map((key) => {
+            {Object.keys(getValues()).map((key) => {
               const fieldName = key as keyof FormValues;
               const label = fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
               return (
-                <div key={fieldName} className="grid gap-3">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor={fieldName}>{label}</Label>
-                    <span className="text-lg font-bold text-primary">{formValues[fieldName]}</span>
-                  </div>
-                  <Controller
-                    name={fieldName}
-                    control={control}
-                    render={({ field }) => (
-                      <Slider
-                        id={fieldName}
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={[field.value]}
-                        onValueChange={(value) => field.onChange(value[0])}
-                        disabled={isLoading}
-                      />
-                    )}
-                  />
+                <div key={fieldName} className="space-y-2">
+                  <Label>{label}</Label>
+                  <Card className="p-4">
+                     <p className="text-2xl font-bold text-primary">{formValues[fieldName]}</p>
+                  </Card>
                 </div>
               );
             })}
         </div>
-        <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
+        <Button type="submit" disabled={isLoading || !selectedStudentId} className="w-full md:w-auto">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
