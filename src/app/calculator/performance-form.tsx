@@ -10,9 +10,10 @@ import type { PredictStudentPerformanceInput, PredictStudentPerformanceOutput } 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Lightbulb, TrendingUp, User, Building } from "lucide-react";
+import { Loader2, Sparkles, Lightbulb, TrendingUp, User, Building, BarChart, Percent } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { StudentData } from "@/data/student-data";
+import type { StudentData, UserRole, Student } from "@/data/student-data";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 
 const formSchema = z.object({
@@ -27,9 +28,15 @@ type FormValues = z.infer<typeof formSchema>;
 interface PerformanceFormProps {
   predictStudentPerformance: (input: PredictStudentPerformanceInput) => Promise<PredictStudentPerformanceOutput>;
   studentData: StudentData;
+  userRole: UserRole;
 }
 
-export function PerformanceForm({ predictStudentPerformance, studentData }: PerformanceFormProps) {
+const calculateOverallPerformance = (student: Student) => {
+    const scores = Object.values(student.scores);
+    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+export function PerformanceForm({ predictStudentPerformance, studentData, userRole }: PerformanceFormProps) {
   const [prediction, setPrediction] = useState<PredictStudentPerformanceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDept, setSelectedDept] = useState<string>("");
@@ -80,6 +87,78 @@ export function PerformanceForm({ predictStudentPerformance, studentData }: Perf
   };
   
   const studentsInDept = studentData[selectedDept] || [];
+
+  const departmentAverage = studentsInDept.length > 0 
+    ? studentsInDept.reduce((acc, student) => acc + calculateOverallPerformance(student), 0) / studentsInDept.length
+    : 0;
+
+  if (userRole === "faculty") {
+    return (
+        <div className="space-y-8">
+         <div className="grid md:grid-cols-2 gap-6 mb-8">
+             <div className="grid gap-2">
+                <Label htmlFor="department" className="flex items-center gap-2"><Building className="h-4 w-4" /> Select Department</Label>
+                <Select onValueChange={handleDepartmentChange} value={selectedDept}>
+                    <SelectTrigger id="department">
+                        <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Object.keys(studentData).map(dept => (
+                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+             </div>
+         </div>
+
+         {selectedDept && (
+            <div className="animate-in fade-in duration-500 space-y-6">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><BarChart className="text-primary"/>{selectedDept} Department Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                       <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Student Name</TableHead>
+                              <TableHead className="text-right">Assessments</TableHead>
+                              <TableHead className="text-right">Projects</TableHead>
+                              <TableHead className="text-right">Feedback</TableHead>
+                              <TableHead className="text-right">Efficiency</TableHead>
+                              <TableHead className="text-right font-bold text-primary">Overall</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {studentsInDept.map((student) => (
+                              <TableRow key={student.id}>
+                                <TableCell className="font-medium">{student.name}</TableCell>
+                                <TableCell className="text-right">{student.scores.assessmentScore}%</TableCell>
+                                <TableCell className="text-right">{student.scores.projectScore}%</TableCell>
+                                <TableCell className="text-right">{student.scores.feedbackScore}%</TableCell>
+                                <TableCell className="text-right">{student.scores.efficiency}%</TableCell>
+                                <TableCell className="text-right font-bold text-primary">{calculateOverallPerformance(student).toFixed(1)}%</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-primary/5 border-primary/20">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                         <CardTitle className="text-lg">Department Average Score</CardTitle>
+                         <Percent className="h-6 w-6 text-primary"/>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-4xl font-bold text-primary">{departmentAverage.toFixed(1)} / 100</p>
+                    </CardContent>
+                </Card>
+            </div>
+         )}
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-8">

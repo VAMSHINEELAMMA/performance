@@ -1,4 +1,7 @@
 
+
+export type UserRole = "student" | "faculty";
+
 export type Student = {
     id: string;
     name: string;
