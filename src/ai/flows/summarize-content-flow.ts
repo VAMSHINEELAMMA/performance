@@ -19,12 +19,15 @@ export type SummarizeContentInput = z.infer<
   typeof SummarizeContentInputSchema
 >;
 
+const FeatureSchema = z.object({
+    featureTitle: z.string().describe("The title of the feature."),
+    featureDescription: z.string().describe("The description of the feature."),
+});
+
 const SummarizeContentOutputSchema = z.object({
-  keyPoints: z
-    .string()
-    .describe(
-      "The key points of the content, formatted as a bulleted list with each point on a new line starting with '- '. Wrap important keywords in each point with double asterisks for highlighting, e.g., 'This is a **keyword**'."
-    ),
+  title: z.string().describe("The main title for the summary, like 'Key features'."),
+  subtitle: z.string().describe("A subtitle for the group of features."),
+  features: z.array(FeatureSchema).describe("An array of features, each with a title and description.")
 });
 export type SummarizeContentOutput = z.infer<
   typeof SummarizeContentOutputSchema
@@ -40,17 +43,17 @@ const prompt = ai.definePrompt({
   name: 'summarizeContentPrompt',
   input: {schema: SummarizeContentInputSchema},
   output: {schema: SummarizeContentOutputSchema},
-  prompt: `You are an expert at summarizing complex topics into key points.
-  Analyze the following content and extract the most important key points.
-  For each key point, identify and wrap the most important keywords or phrases in double asterisks (e.g., "The platform uses **AI** to predict performance.").
-  Present the key points as a concise, easy-to-read bulleted list. Each bullet point must start on a new line with a hyphen and a space (e.g., "- First point.").
+  prompt: `You are an expert at summarizing complex topics into key features.
+  Analyze the following content and extract the most important features.
+  The output should be structured with a main title, a subtitle, and a list of features.
+  For each feature, provide a clear title and a concise description.
 
   Content to summarize:
   ---
   {{content}}
   ---
 
-  Output the key points in the specified JSON format.`,
+  Please format the output as a structured JSON object with a title, subtitle, and an array of features.`,
 });
 
 const summarizeContentFlow = ai.defineFlow(
@@ -61,7 +64,7 @@ const summarizeContentFlow = ai.defineFlow(
   },
   async input => {
     if (!input.content.trim()) {
-        return { keyPoints: "Please provide some content to summarize." };
+        return { title: "Error", subtitle: "No content provided", features: [{featureTitle: "Input required", featureDescription: "Please provide some content to summarize."}] };
     }
     const {output} = await prompt(input);
     return output!;

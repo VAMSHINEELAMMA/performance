@@ -9,22 +9,6 @@ import { Loader2, Sparkles, BookText } from "lucide-react";
 import { summarizeContent, SummarizeContentOutput } from "@/ai/flows/summarize-content-flow";
 import { useToast } from "@/hooks/use-toast";
 
-const HighlightedText = ({ text }: { text: string }) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return (
-        <span>
-            {parts.map((part, index) =>
-                part.startsWith('**') && part.endsWith('**') ? (
-                    <strong key={index} className="text-primary font-bold">
-                        {part.slice(2, -2)}
-                    </strong>
-                ) : (
-                    part
-                )
-            )}
-        </span>
-    );
-};
 
 export default function SummarizerPage() {
   const [pastedContent, setPastedContent] = useState("");
@@ -96,7 +80,7 @@ export default function SummarizerPage() {
                     ) : (
                     <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Key Points
+                        Generate Key Features
                     </>
                     )}
                 </Button>
@@ -108,18 +92,17 @@ export default function SummarizerPage() {
         <Card className="animate-in fade-in duration-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="text-primary" /> Key Points
+              <Sparkles className="text-primary" /> {summary.title}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 list-disc list-inside text-muted-foreground">
-                {summary.keyPoints.split('\n').map((point, index) => {
-                    const trimmedPoint = point.replace(/^- /, '').trim();
-                    if (trimmedPoint) {
-                        return <li key={index}><HighlightedText text={trimmedPoint} /></li>;
-                    }
-                    return null;
-                })}
+          <CardContent className="space-y-4">
+            <h3 className="font-semibold">{summary.subtitle}</h3>
+            <ul className="space-y-4 list-disc list-outside pl-5 text-muted-foreground">
+                {summary.features.map((feature, index) => (
+                    <li key={index}>
+                      <strong className="font-semibold text-foreground">{feature.featureTitle}:</strong> {feature.featureDescription}
+                    </li>
+                ))}
             </ul>
           </CardContent>
         </Card>
