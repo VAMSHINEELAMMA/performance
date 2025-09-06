@@ -1,19 +1,27 @@
+
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 
-import { Card } from "@/components/ui/card"
+type Scores = {
+  assessmentScore: number;
+  projectScore: number;
+  feedbackScore: number;
+  efficiency: number;
+};
 
-const data = [
-  { name: "Math", score: 85 },
-  { name: "Science", score: 92 },
-  { name: "History", score: 78 },
-  { name: "English", score: 88 },
-  { name: "Art", score: 95 },
-  { name: "CS", score: 98 },
-]
+interface PerformanceChartProps {
+  scores: Scores;
+}
 
-export function PerformanceChart() {
+export function PerformanceChart({ scores }: PerformanceChartProps) {
+  const data = [
+    { name: "Assessment", score: scores.assessmentScore },
+    { name: "Project", score: scores.projectScore },
+    { name: "Feedback", score: scores.feedbackScore },
+    { name: "Efficiency", score: scores.efficiency },
+  ];
+  
   return (
     <div className="h-[350px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -31,6 +39,7 @@ export function PerformanceChart() {
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `${value}`}
+            domain={[0, 100]}
           />
           <Tooltip
             cursor={{ fill: 'hsl(var(--accent) / 0.2)' }}
