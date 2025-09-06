@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   BookText,
   BrainCircuit,
+  Map,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -50,6 +51,11 @@ export const navItems: NavItem[] = [
     title: 'Summarizer',
     href: '/summarizer',
     icon: BookText,
+  },
+  {
+    title: 'Planner',
+    href: '/planner',
+    icon: Map,
   },
   {
     title: 'Games',
