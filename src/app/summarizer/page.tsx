@@ -95,9 +95,15 @@ export default function SummarizerPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-                {summary.keyPoints}
-            </div>
+            <ul className="space-y-2 list-disc list-inside text-muted-foreground">
+                {summary.keyPoints.split('\n').map((point, index) => {
+                    const trimmedPoint = point.replace(/^- /, '').trim();
+                    if (trimmedPoint) {
+                        return <li key={index}>{trimmedPoint}</li>;
+                    }
+                    return null;
+                })}
+            </ul>
           </CardContent>
         </Card>
       )}
