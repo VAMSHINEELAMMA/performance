@@ -48,11 +48,6 @@ export const navItems: NavItem[] = [
     icon: Calculator,
   },
   {
-    title: 'Planner',
-    href: '/planner',
-    icon: Map,
-  },
-  {
     title: 'Games',
     href: '/games',
     icon: Gamepad2,
