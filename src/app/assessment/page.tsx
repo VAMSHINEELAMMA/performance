@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Upload, Clock, CheckCircle, FileUp, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -135,7 +134,7 @@ export default function AssessmentPage() {
   );
 
   const facultyView = (
-     <div className="grid gap-8 mt-6 lg:grid-cols-2">
+     <div className="grid gap-8 mt-6">
         <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Upload New Assessment</CardTitle>
@@ -178,8 +177,8 @@ export default function AssessmentPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {submissions.map((submission) => (
-                      <TableRow key={`${submission.student}-${submission.assessment}`}>
+                    {submissions.map((submission, index) => (
+                      <TableRow key={`${submission.student}-${submission.assessment}-${index}`}>
                         <TableCell className="font-medium">{submission.student}</TableCell>
                         <TableCell>{submission.assessment}</TableCell>
                         <TableCell className="text-right">

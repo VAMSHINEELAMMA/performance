@@ -8,13 +8,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Linkedin, Github, Download, FileArchive } from "lucide-react";
+import { Upload, Linkedin, Github, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 
 
 const initialProjects = [
   {
+    studentName: "John Doe",
     title: "E-commerce Website",
     description: "A full-stack e-commerce platform built with Next.js, Stripe, and PostgreSQL.",
     imageUrl: "https://picsum.photos/600/400?random=1",
@@ -24,6 +26,7 @@ const initialProjects = [
     dataAiHint: 'ecommerce website'
   },
   {
+    studentName: "Jane Smith",
     title: "Data Visualization Dashboard",
     description: "An analytics dashboard for visualizing sales data using D3.js and React.",
     imageUrl: "https://picsum.photos/600/400?random=2",
@@ -33,6 +36,7 @@ const initialProjects = [
     dataAiHint: 'data dashboard'
   },
   {
+    studentName: "Peter Jones",
     title: "Mobile Fitness App",
     description: "A cross-platform mobile app developed with React Native to track workouts and nutrition.",
     imageUrl: "https://picsum.photos/600/400?random=3",
@@ -42,6 +46,7 @@ const initialProjects = [
     dataAiHint: 'fitness app'
   },
   {
+    studentName: "John Doe",
     title: "Machine Learning Model",
     description: "A Python-based model to predict stock market trends using historical data.",
     imageUrl: "https://picsum.photos/600/400?random=4",
@@ -57,6 +62,7 @@ type Project = typeof initialProjects[0];
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const { user } = useAuth();
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -65,6 +71,8 @@ export default function ProjectsPage() {
     githubUrl: "",
     projectFile: null as File | null
   });
+
+  const studentProjects = projects.filter(p => p.studentName === user?.fullName);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -90,11 +98,15 @@ export default function ProjectsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProject.title || !newProject.description || !newProject.imageUrl) {
+    if (!newProject.title || !newProject.description || !newProject.imageUrl || !user) {
         alert("Please fill in all required fields.");
         return;
     }
-    const projectToAdd: Project = { ...newProject, dataAiHint: 'custom project' };
+    const projectToAdd: Project = { 
+        ...newProject, 
+        studentName: user.fullName, 
+        dataAiHint: 'custom project' 
+    };
     setProjects(prev => [projectToAdd, ...prev]);
     setIsUploadDialogOpen(false);
     setNewProject({
@@ -107,10 +119,9 @@ export default function ProjectsPage() {
     });
   };
 
-
-  return (
+  const studentView = (
     <div className="space-y-6">
-      <div className="flex justify-end">
+        <div className="flex justify-end">
         <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -160,7 +171,7 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project, index) => (
+        {studentProjects.map((project, index) => (
           <Card key={`${project.title}-${index}`} className="shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
             <CardHeader className="p-0">
               <div className="relative h-48 w-full">
@@ -227,6 +238,95 @@ export default function ProjectsPage() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+
+  const facultyView = (
+    <div className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project, index) => (
+          <Card key={`${project.title}-${index}`} className="shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+            <CardHeader className="p-0">
+              <div className="relative h-48 w-full">
+                <Image
+                  src={project.imageUrl}
+                  alt={project.title}
+                  width={600}
+                  height={400}
+                  className="object-cover w-full h-full"
+                  data-ai-hint={project.dataAiHint}
+                />
+                 <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm font-semibold">{project.studentName}</div>
+              </div>
+            </CardHeader>
+            <div className="p-6 flex flex-col flex-grow">
+              <CardTitle>{project.title}</CardTitle>
+              <CardDescription className="mt-2 flex-grow">{project.description}</CardDescription>
+            </div>
+            <CardFooter className="flex flex-col sm:flex-row gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">View Details</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <div className="relative h-60 w-full rounded-lg overflow-hidden mb-4">
+                            <Image
+                              src={project.imageUrl}
+                              alt={project.title}
+                              fill
+                              className="object-cover"
+                              data-ai-hint={project.dataAiHint}
+                            />
+                        </div>
+                        <DialogTitle className="text-2xl">{project.title}</DialogTitle>
+                         <DialogDescription className="font-semibold text-foreground">By {project.studentName}</DialogDescription>
+                        <DialogDescription>{project.description}</DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                       {project.projectFile && (
+                          <Button onClick={() => handleDownload(project.projectFile!)} className="w-full">
+                              <Download className="mr-2 h-4 w-4" />
+                              Download Project
+                          </Button>
+                        )}
+                        {project.githubUrl && (
+                            <Button asChild variant="secondary" className="w-full">
+                                <Link href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                                    <Github className="mr-2 h-4 w-4" />
+                                    GitHub
+                                </Link>
+                            </Button>
+                        )}
+                        {project.linkedinUrl && (
+                          <Button asChild variant="secondary" className="w-full">
+                              <Link href={project.linkedinUrl} target="_blank" rel="noopener noreferrer">
+                                  <Linkedin className="mr-2 h-4 w-4" />
+                                  LinkedIn
+                              </Link>
+                          </Button>
+                        )}
+                    </div>
+                </DialogContent>
+              </Dialog>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (user?.role === 'student') {
+      return studentView;
+  }
+
+  if(user?.role === 'faculty') {
+      return facultyView;
+  }
+
+  return (
+    <div className="flex items-center justify-center h-full">
+        <p>You do not have a role assigned. Please contact support.</p>
     </div>
   );
 }
