@@ -10,6 +10,7 @@ import {
   type LucideIcon,
   LifeBuoy,
   BookText,
+  BrainCircuit,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -51,6 +52,11 @@ export const navItems: NavItem[] = [
     icon: BookText,
   },
   {
+    title: 'ML Concepts',
+    href: '/concepts',
+    icon: BrainCircuit,
+  },
+  {
     title: 'Games',
     href: '/games',
     icon: Gamepad2,
@@ -64,5 +70,5 @@ export const navItems: NavItem[] = [
     title: 'Help',
     href: '/help',
     icon: LifeBuoy,
-  }
+  },
 ];
