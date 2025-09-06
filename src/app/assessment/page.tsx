@@ -191,7 +191,7 @@ export default function AssessmentPage() {
               {assessment.status === 'Submitted' ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
               <span>{assessment.status}</span>
             </div>
-             {assessment.score && (
+             {assessment.status === 'Submitted' && assessment.score && (
               <div className="flex items-center gap-2 text-sm text-primary font-semibold">
                 <span>Score: {assessment.score}/100</span>
               </div>
@@ -372,3 +372,5 @@ export default function AssessmentPage() {
     </div>
   );
 }
+
+    
