@@ -23,7 +23,7 @@ const SummarizeContentOutputSchema = z.object({
   keyPoints: z
     .string()
     .describe(
-      'The key points of the content, formatted as a bulleted or numbered list.'
+      "The key points of the content, formatted as a bulleted list. Wrap important keywords in each point with double asterisks for highlighting, e.g., 'This is a **keyword**'."
     ),
 });
 export type SummarizeContentOutput = z.infer<
@@ -42,6 +42,7 @@ const prompt = ai.definePrompt({
   output: {schema: SummarizeContentOutputSchema},
   prompt: `You are an expert at summarizing complex topics into key points.
   Analyze the following content and extract the most important key points.
+  For each key point, identify and wrap the most important keywords or phrases in double asterisks (e.g., "The platform uses **AI** to predict performance.").
   Present the key points as a concise, easy-to-read bulleted list.
 
   Content to summarize:

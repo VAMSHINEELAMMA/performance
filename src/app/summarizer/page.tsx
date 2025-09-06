@@ -9,6 +9,23 @@ import { Loader2, Sparkles, BookText } from "lucide-react";
 import { summarizeContent, SummarizeContentOutput } from "@/ai/flows/summarize-content-flow";
 import { useToast } from "@/hooks/use-toast";
 
+const HighlightedText = ({ text }: { text: string }) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return (
+        <span>
+            {parts.map((part, index) =>
+                part.startsWith('**') && part.endsWith('**') ? (
+                    <strong key={index} className="text-primary font-bold">
+                        {part.slice(2, -2)}
+                    </strong>
+                ) : (
+                    part
+                )
+            )}
+        </span>
+    );
+};
+
 export default function SummarizerPage() {
   const [pastedContent, setPastedContent] = useState("");
   const [summary, setSummary] = useState<SummarizeContentOutput | null>(null);
@@ -99,7 +116,7 @@ export default function SummarizerPage() {
                 {summary.keyPoints.split('\n').map((point, index) => {
                     const trimmedPoint = point.replace(/^- /, '').trim();
                     if (trimmedPoint) {
-                        return <li key={index}>{trimmedPoint}</li>;
+                        return <li key={index}><HighlightedText text={trimmedPoint} /></li>;
                     }
                     return null;
                 })}
