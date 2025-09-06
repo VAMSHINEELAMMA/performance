@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('storage', checkUser);
     };
-  }, [pathname]);
+  }, []);
 
   const login = (email: string, password: string): boolean => {
     try {

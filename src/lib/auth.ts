@@ -1,7 +1,10 @@
 
+export type UserRole = "student" | "faculty";
+
 export interface User {
   fullName: string;
   email: string;
+  role: UserRole;
 }
 
 interface UserWithPassword extends User {
@@ -28,15 +31,40 @@ const setLocalStorage = (key: string, value: any) => {
     }
 }
 
+// Pre-seed with a faculty user for demo purposes
+const initializeUsers = () => {
+    const users: UserWithPassword[] = getLocalStorage(USERS_KEY) || [];
+    if (!users.find(user => user.email === 'faculty@example.com')) {
+        users.push({
+            fullName: 'Dr. Admin',
+            email: 'faculty@example.com',
+            password: 'password',
+            role: 'faculty'
+        });
+        setLocalStorage(USERS_KEY, users);
+    }
+}
 
-export const signup = ({ fullName, email, password }: UserWithPassword) => {
+if (typeof window !== 'undefined') {
+    initializeUsers();
+}
+
+
+export const signup = ({ fullName, email, password, role }: UserWithPassword) => {
   const users: UserWithPassword[] = getLocalStorage(USERS_KEY) || [];
 
   if (users.find(user => user.email === email)) {
     throw new Error("User with this email already exists.");
   }
+  
+  if (role === 'student') {
+      const studentExists = Object.values(require('@/data/student-data').studentData).flat().some((s: any) => s.name === fullName);
+      if (!studentExists) {
+        throw new Error(`Student "${fullName}" does not exist in the database. Cannot create a student account.`);
+      }
+  }
 
-  const newUser = { fullName, email, password };
+  const newUser = { fullName, email, password, role };
   users.push(newUser);
   setLocalStorage(USERS_KEY, users);
 };

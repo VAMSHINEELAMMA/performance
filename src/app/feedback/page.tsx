@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { analyzeStudentFeedback, AnalyzeFeedbackInput, AnalyzeFeedbackOutput } from "@/ai/flows/analyze-feedback-flow";
 
 type Feedback = {
@@ -33,6 +34,7 @@ export default function FeedbackPage() {
   const [experience, setExperience] = useState<"Like" | "Dislike" | null>(null);
   const [comments, setComments] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [analysis, setAnalysis] = useState<AnalyzeFeedbackOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -104,12 +106,13 @@ export default function FeedbackPage() {
     return acc;
   }, {} as Record<string, Feedback[]>);
 
+  const defaultTab = user?.role === 'faculty' ? 'faculty' : 'student';
 
   return (
-    <Tabs defaultValue="student" className="w-full max-w-4xl mx-auto">
+    <Tabs defaultValue={defaultTab} className="w-full max-w-4xl mx-auto">
       <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
-        <TabsTrigger value="student">Student View</TabsTrigger>
-        <TabsTrigger value="faculty">Faculty View</TabsTrigger>
+        <TabsTrigger value="student" disabled={user?.role === 'faculty'}>Student View</TabsTrigger>
+        <TabsTrigger value="faculty" disabled={user?.role === 'student'}>Faculty View</TabsTrigger>
       </TabsList>
       <TabsContent value="student">
         <div className="flex justify-center items-start pt-10">

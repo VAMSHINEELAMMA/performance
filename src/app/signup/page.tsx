@@ -8,19 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signup } from "@/lib/auth";
+import { signup, UserRole } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("student");
   const router = useRouter();
   const { toast } = useToast();
 
 
   const handleSignup = () => {
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !role) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -30,7 +32,7 @@ export default function SignupPage() {
     }
     
     try {
-      signup({ fullName, email, password });
+      signup({ fullName, email, password, role });
       toast({
         title: "Account Created",
         description: "Your account has been created. Please sign in.",
@@ -84,6 +86,18 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+        </div>
+        <div className="grid gap-2">
+            <Label htmlFor="role">Role</Label>
+             <Select onValueChange={(value) => setRole(value as UserRole)} defaultValue="student">
+                <SelectTrigger id="role">
+                    <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="faculty">Faculty</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
