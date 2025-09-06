@@ -1,6 +1,18 @@
-# EduPerform - Student Performance Prediction
+# EduPerform - AI-Powered Student Performance & Engagement Platform
 
-This is a student performance prediction platform built with Next.js and Firebase Studio. It uses AI to provide insights into student performance.
+EduPerform is a comprehensive, AI-enhanced educational platform designed to empower both students and faculty. Built with Next.js, Genkit, and Firebase Studio, this application provides a suite of tools to track, predict, and improve student performance while fostering a more engaging and connected learning environment.
+
+## Key Features
+
+*   **Personalized Student Dashboard**: Students get a real-time overview of their academic performance, including scores, AI-generated strengths, and areas for improvement.
+*   **AI Performance Calculator**: Utilizes AI to predict future student performance based on current metrics, offering actionable insights for students and high-level departmental views for faculty.
+*   **Dynamic Learning Planner**: An AI-powered tool that generates customized, step-by-step learning paths for any topic, helping students structure their self-study.
+*   **Interactive Assessments & Submissions**: Faculty can create and manage assessments, while students can easily submit their work.
+*   **Student Project Portfolios**: A dedicated space for students to upload and showcase their projects, building a portfolio of their work.
+*   **AI-Analyzed Feedback System**: Students can provide feedback on courses and assessments, which faculty can analyze with AI to generate actionable suggestions.
+*   **Faculty & Peer Connection**: A directory to find and connect with faculty members to ask questions and foster collaboration.
+*   **Mind-Refreshing Games**: A section with mini-games to help students relax and sharpen their cognitive skills.
+*   **Role-Based Access Control**: Separate, tailored experiences for students and faculty members.
 
 ## Running the Project Locally
 
