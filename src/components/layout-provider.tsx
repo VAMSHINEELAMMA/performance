@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { navItems } from "@/lib/constants";
 
-const appRoutes = [...navItems.map(item => item.href), "/help"];
+const appRoutes = [...navItems.map(item => item.href), "/help", "/profile", "/settings"];
 const authRoutes = ["/login", "/signup"];
 const publicRoutes = ["/"]; // Landing page
 

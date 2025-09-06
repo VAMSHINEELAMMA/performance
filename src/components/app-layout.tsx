@@ -34,7 +34,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const { user, logout } = useAuth();
-  const pageTitle = navItems.find((item) => item.href === pathname)?.title || 'Dashboard';
+  const pageTitle = navItems.find((item) => item.href === pathname)?.title || 
+                    (pathname.startsWith('/profile') ? 'Profile' : 
+                    (pathname.startsWith('/settings') ? 'Settings' : 'Dashboard'));
+
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -51,7 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={{ children: item.title, side: 'right' }}
                 >
                   <Link href={item.href}>
@@ -97,13 +100,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+              <DropdownMenuItem asChild>
+                 <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>
