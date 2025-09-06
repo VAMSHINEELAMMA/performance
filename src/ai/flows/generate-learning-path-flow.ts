@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,7 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateLearningPathInputSchema = z.object({
+const GenerateLearningPathInputSchema = z.object({
   topic: z.string().describe('The topic for which to generate a learning path.'),
 });
 export type GenerateLearningPathInput = z.infer<
@@ -29,7 +30,7 @@ const LearningStepSchema = z.object({
     .describe('The estimated time it will take to learn this concept (e.g., "2 hours", "3 days").'),
 });
 
-export const GenerateLearningPathOutputSchema = z.object({
+const GenerateLearningPathOutputSchema = z.object({
   learningPath: z.array(LearningStepSchema).describe('An array of steps that form the learning path.'),
 });
 export type GenerateLearningPathOutput = z.infer<
