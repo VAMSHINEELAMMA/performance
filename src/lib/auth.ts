@@ -7,7 +7,7 @@ export interface User {
   role: UserRole;
 }
 
-interface UserWithPassword extends User {
+export interface UserWithPassword extends User {
     password: string;
 }
 
@@ -50,7 +50,7 @@ if (typeof window !== 'undefined') {
 }
 
 
-export const signup = ({ fullName, email, password, role }: UserWithPassword) => {
+export const signup = ({ fullName, email, password, role }: Omit<UserWithPassword, 'id'>) => {
   const users: UserWithPassword[] = getLocalStorage(USERS_KEY) || [];
 
   if (users.find(user => user.email === email)) {
@@ -69,7 +69,7 @@ export const signup = ({ fullName, email, password, role }: UserWithPassword) =>
   setLocalStorage(USERS_KEY, users);
 };
 
-export const login = (email: string, password: string): User => {
+export const login = (email: string, password: string): UserWithPassword => {
   const users: UserWithPassword[] = getLocalStorage(USERS_KEY) || [];
   const user = users.find(u => u.email === email && u.password === password);
 
@@ -79,7 +79,7 @@ export const login = (email: string, password: string): User => {
   
   const { password: _, ...userWithoutPassword } = user;
   setLocalStorage(CURRENT_USER_KEY, userWithoutPassword);
-  return userWithoutPassword;
+  return user;
 };
 
 export const logout = () => {
@@ -92,4 +92,39 @@ export const logout = () => {
 
 export const getCurrentUser = (): User | null => {
   return getLocalStorage(CURRENT_USER_KEY);
+};
+
+export const updateUser = (email: string, updates: Partial<User>): UserWithPassword => {
+    const users: UserWithPassword[] = getLocalStorage(USERS_KEY) || [];
+    const userIndex = users.findIndex(u => u.email === email);
+    if(userIndex === -1) {
+        throw new Error("User not found.");
+    }
+    users[userIndex] = { ...users[userIndex], ...updates };
+    setLocalStorage(USERS_KEY, users);
+    
+    // Also update current user if they are logged in
+    const currentUser = getCurrentUser();
+    if(currentUser && currentUser.email === email) {
+        const { password, ...userWithoutPassword } = users[userIndex];
+        setLocalStorage(CURRENT_USER_KEY, userWithoutPassword);
+    }
+    
+    return users[userIndex];
+};
+
+export const changePassword = (email: string, currentPassword: string, newPassword: string) => {
+    const users: UserWithPassword[] = getLocalStorage(USERS_KEY) || [];
+    const userIndex = users.findIndex(u => u.email === email);
+
+    if (userIndex === -1) {
+        throw new Error("User not found.");
+    }
+
+    if (users[userIndex].password !== currentPassword) {
+        throw new Error("Current password does not match.");
+    }
+
+    users[userIndex].password = newPassword;
+    setLocalStorage(USERS_KEY, users);
 };

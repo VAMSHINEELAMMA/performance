@@ -5,9 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Bell, Palette, Lock } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 
 export default function SettingsPage() {
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // useEffect only runs on the client, so now we can safely show the UI
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) {
+        return null
+    }
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -22,9 +35,12 @@ export default function SettingsPage() {
                             <Label htmlFor="dark-mode" className="font-medium">Dark Mode</Label>
                             <p className="text-sm text-muted-foreground">Enable or disable dark theme.</p>
                         </div>
-                        <Switch id="dark-mode" disabled />
+                        <Switch 
+                            id="dark-mode"
+                            checked={theme === "dark"}
+                            onCheckedChange={() => setTheme(theme === "light" ? "dark" : "light")}
+                        />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Theme switching is not implemented in this prototype.</p>
                 </CardContent>
             </Card>
 
