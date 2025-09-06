@@ -55,7 +55,7 @@ export default function SummarizerPage() {
             <div>
               <CardTitle className="text-2xl font-headline">AI Content Summarizer</CardTitle>
               <CardDescription>
-                Paste your content below and the AI will extract the key pints for you.
+                Paste your content below and the AI will extract the key points for you.
               </CardDescription>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function SummarizerPage() {
                     ) : (
                     <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Key Pints
+                        Generate Key Points
                     </>
                     )}
                 </Button>
@@ -91,12 +91,12 @@ export default function SummarizerPage() {
         <Card className="animate-in fade-in duration-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="text-primary" /> Key Pints
+              <Sparkles className="text-primary" /> Key Points
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
-                {summary.keyPints}
+                {summary.keyPoints}
             </div>
           </CardContent>
         </Card>
