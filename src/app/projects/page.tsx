@@ -8,14 +8,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Linkedin, Github, Download } from "lucide-react";
+import { Upload, Linkedin, Github, Download, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 
 const initialProjects = [
   {
+    id: "proj-1",
     studentName: "John Doe",
     title: "E-commerce Website",
     description: "A full-stack e-commerce platform built with Next.js, Stripe, and PostgreSQL.",
@@ -26,6 +29,7 @@ const initialProjects = [
     dataAiHint: 'ecommerce website'
   },
   {
+    id: "proj-2",
     studentName: "Jane Smith",
     title: "Data Visualization Dashboard",
     description: "An analytics dashboard for visualizing sales data using D3.js and React.",
@@ -36,6 +40,7 @@ const initialProjects = [
     dataAiHint: 'data dashboard'
   },
   {
+    id: "proj-3",
     studentName: "Peter Jones",
     title: "Mobile Fitness App",
     description: "A cross-platform mobile app developed with React Native to track workouts and nutrition.",
@@ -46,6 +51,7 @@ const initialProjects = [
     dataAiHint: 'fitness app'
   },
   {
+    id: "proj-4",
     studentName: "John Doe",
     title: "Machine Learning Model",
     description: "A Python-based model to predict stock market trends using historical data.",
@@ -63,6 +69,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const { user } = useAuth();
+  const { toast } = useToast();
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -99,11 +106,12 @@ export default function ProjectsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProject.title || !newProject.description || !newProject.imageUrl || !user) {
-        alert("Please fill in all required fields.");
+        toast({ variant: "destructive", title: "Error", description: "Please fill in all required fields."});
         return;
     }
     const projectToAdd: Project = { 
         ...newProject, 
+        id: `proj-${Date.now()}`,
         studentName: user.fullName, 
         dataAiHint: 'custom project' 
     };
@@ -117,6 +125,12 @@ export default function ProjectsPage() {
         githubUrl: "",
         projectFile: null
     });
+    toast({ title: "Project Uploaded", description: "Your new project has been added."});
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    toast({ title: "Project Deleted", description: "The project has been removed from the portfolio." });
   };
 
   const studentView = (
@@ -171,8 +185,8 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {studentProjects.map((project, index) => (
-          <Card key={`${project.title}-${index}`} className="shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+        {studentProjects.map((project) => (
+          <Card key={project.id} className="shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
             <CardHeader className="p-0">
               <div className="relative h-48 w-full">
                 <Image
@@ -244,8 +258,8 @@ export default function ProjectsPage() {
   const facultyView = (
     <div className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project, index) => (
-          <Card key={`${project.title}-${index}`} className="shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+        {projects.map((project) => (
+          <Card key={project.id} className="shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
             <CardHeader className="p-0">
               <div className="relative h-48 w-full">
                 <Image
@@ -263,7 +277,7 @@ export default function ProjectsPage() {
               <CardTitle>{project.title}</CardTitle>
               <CardDescription className="mt-2 flex-grow">{project.description}</CardDescription>
             </div>
-            <CardFooter className="flex flex-col sm:flex-row gap-2">
+            <CardFooter className="flex justify-between items-center gap-2">
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full">View Details</Button>
@@ -309,6 +323,23 @@ export default function ProjectsPage() {
                     </div>
                 </DialogContent>
               </Dialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4"/>
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone. This will permanently delete {project.studentName}'s project "{project.title}".</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteProject(project.id)}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardFooter>
           </Card>
         ))}

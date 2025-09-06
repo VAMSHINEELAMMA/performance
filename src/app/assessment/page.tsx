@@ -4,18 +4,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Upload, Clock, CheckCircle, FileUp, Download } from "lucide-react";
+import { FileText, Upload, Clock, CheckCircle, FileUp, Download, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 
 const initialAssessments = [
-  { title: "Calculus Midterm", subject: "Mathematics", dueDate: "2024-08-15", status: "Not Submitted", file: null as File | null, score: null },
-  { title: "World War II Essay", subject: "History", dueDate: "2024-08-10", status: "Submitted", file: new File([], "history_essay.pdf"), score: 88 },
-  { title: "React Components Lab", subject: "Computer Science", dueDate: "2024-08-12", status: "Submitted", file: new File([], "react-lab.pdf"), score: 92 },
+  { id: "calc-midterm", title: "Calculus Midterm", subject: "Mathematics", dueDate: "2024-08-15", status: "Not Submitted", file: null as File | null, score: null },
+  { id: "history-essay", title: "World War II Essay", subject: "History", dueDate: "2024-08-10", status: "Submitted", file: new File([], "history_essay.pdf"), score: 88 },
+  { id: "react-lab", title: "React Components Lab", subject: "Computer Science", dueDate: "2024-08-12", status: "Submitted", file: new File([], "react-lab.pdf"), score: 92 },
 ];
 
 const initialSubmissions = [
@@ -31,6 +33,9 @@ export default function AssessmentPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeAssessment, setActiveAssessment] = useState<string | null>(null);
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [newAssessment, setNewAssessment] = useState({ title: '', subject: '', file: null as File | null});
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -73,11 +78,43 @@ export default function AssessmentPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  const handleCreateAssessment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAssessment.title || !newAssessment.subject || !newAssessment.file) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields.'});
+        return;
+    }
+    const newId = newAssessment.title.toLowerCase().replace(/\s+/g, '-');
+    const newAssessmentData = {
+      id: newId,
+      title: newAssessment.title,
+      subject: newAssessment.subject,
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0], // Due in 7 days
+      status: 'Not Submitted',
+      file: newAssessment.file,
+      score: null
+    };
+    setAssessments(prev => [newAssessmentData, ...prev]);
+    toast({ title: 'Success', description: 'New assessment has been created.' });
+    setNewAssessment({ title: '', subject: '', file: null });
+    (e.target as HTMLFormElement).reset();
+  }
+
+  const handleDeleteAssessment = (assessmentId: string) => {
+    setAssessments(prev => prev.filter(a => a.id !== assessmentId));
+    // Also remove related submissions
+    const assessmentToDelete = assessments.find(a => a.id === assessmentId);
+    if(assessmentToDelete) {
+      setSubmissions(prev => prev.filter(s => s.assessment !== assessmentToDelete.title));
+    }
+    toast({ title: 'Success', description: 'Assessment has been deleted.' });
+  }
   
   const studentView = (
     <div className="grid gap-6 mt-6 md:grid-cols-2 lg:grid-cols-3">
       {assessments.map((assessment) => (
-        <Card key={assessment.title} className="shadow-md hover:shadow-lg transition-shadow">
+        <Card key={assessment.id} className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><FileText className="text-primary"/>{assessment.title}</CardTitle>
             <CardDescription>{assessment.subject}</CardDescription>
@@ -140,27 +177,64 @@ export default function AssessmentPage() {
               <CardTitle>Upload New Assessment</CardTitle>
               <CardDescription>Create and distribute a new assessment for your students.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-               <div className="grid gap-2">
-                 <Label htmlFor="assessment-title">Title</Label>
-                 <Input id="assessment-title" placeholder="e.g., Final Exam"/>
-               </div>
-               <div className="grid gap-2">
-                 <Label htmlFor="assessment-subject">Subject</Label>
-                 <Input id="assessment-subject" placeholder="e.g., Computer Science"/>
-               </div>
-               <div className="grid gap-2">
-                 <Label htmlFor="assessment-file">Assessment File</Label>
-                 <Input id="assessment-file" type="file" />
-               </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full">
-                <FileUp className="mr-2 h-4 w-4"/>
-                Upload Assessment
-              </Button>
-            </CardFooter>
+            <form onSubmit={handleCreateAssessment}>
+                <CardContent className="space-y-4">
+                   <div className="grid gap-2">
+                     <Label htmlFor="assessment-title">Title</Label>
+                     <Input id="assessment-title" placeholder="e.g., Final Exam" onChange={(e) => setNewAssessment(p => ({...p, title: e.target.value}))}/>
+                   </div>
+                   <div className="grid gap-2">
+                     <Label htmlFor="assessment-subject">Subject</Label>
+                     <Input id="assessment-subject" placeholder="e.g., Computer Science" onChange={(e) => setNewAssessment(p => ({...p, subject: e.target.value}))}/>
+                   </div>
+                   <div className="grid gap-2">
+                     <Label htmlFor="assessment-file">Assessment File</Label>
+                     <Input id="assessment-file" type="file" onChange={(e) => setNewAssessment(p => ({...p, file: e.target.files?.[0] || null}))} />
+                   </div>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" type="submit">
+                    <FileUp className="mr-2 h-4 w-4"/>
+                    Upload Assessment
+                  </Button>
+                </CardFooter>
+            </form>
           </Card>
+
+         <Card className="shadow-lg">
+          <CardHeader>
+              <CardTitle>Existing Assessments</CardTitle>
+              <CardDescription>Manage and review existing assessments.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             {assessments.map(assessment => (
+                 <Card key={assessment.id} className="flex items-center justify-between p-4">
+                     <div>
+                         <p className="font-bold">{assessment.title}</p>
+                         <p className="text-sm text-muted-foreground">{assessment.subject}</p>
+                     </div>
+                     <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                            <Trash2 className="h-4 w-4"/>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>This action cannot be undone. This will permanently delete the assessment "{assessment.title}" and all associated submissions.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteAssessment(assessment.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                     </AlertDialog>
+                 </Card>
+             ))}
+          </CardContent>
+        </Card>
+
 
         <Card className="shadow-lg">
             <CardHeader>

@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ThumbsUp, ThumbsDown, Send, FileDown, BrainCircuit, Loader2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Send, FileDown, BrainCircuit, Loader2, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { analyzeStudentFeedback, AnalyzeFeedbackInput, AnalyzeFeedbackOutput } from "@/ai/flows/analyze-feedback-flow";
 
 type Feedback = {
+  id: string;
   studentName: string;
   subject: string;
   experience: "Like" | "Dislike";
@@ -22,9 +24,9 @@ type Feedback = {
 };
 
 const initialFeedbacks: Feedback[] = [
-    { studentName: 'John Doe', subject: 'Calculus Midterm', experience: 'Dislike', comments: 'The midterm was too difficult and the concepts were not covered well in class.' },
-    { studentName: 'Jane Smith', subject: 'React Components Lab', experience: 'Like', comments: 'I really enjoyed this lab, it was very practical and helped me understand React better.' },
-    { studentName: 'Peter Jones', subject: 'Calculus Midterm', experience: 'Like', comments: 'Challenging but fair. I felt prepared.' },
+    { id: 'fb-1', studentName: 'John Doe', subject: 'Calculus Midterm', experience: 'Dislike', comments: 'The midterm was too difficult and the concepts were not covered well in class.' },
+    { id: 'fb-2', studentName: 'Jane Smith', subject: 'React Components Lab', experience: 'Like', comments: 'I really enjoyed this lab, it was very practical and helped me understand React better.' },
+    { id: 'fb-3', studentName: 'Peter Jones', subject: 'Calculus Midterm', experience: 'Like', comments: 'Challenging but fair. I felt prepared.' },
 ];
 
 
@@ -51,7 +53,13 @@ export default function FeedbackPage() {
       return;
     }
 
-    const newFeedback: Feedback = { studentName: user.fullName, subject, experience, comments };
+    const newFeedback: Feedback = { 
+        id: `fb-${Date.now()}`,
+        studentName: user.fullName, 
+        subject, 
+        experience, 
+        comments 
+    };
     setFeedbacks(prev => [...prev, newFeedback]);
     
     toast({
@@ -83,6 +91,11 @@ export default function FeedbackPage() {
         setIsAnalyzing(false);
     }
   };
+
+  const handleDeleteFeedback = (feedbackId: string) => {
+    setFeedbacks(prev => prev.filter(f => f.id !== feedbackId));
+    toast({ title: "Feedback Deleted", description: "The feedback entry has been removed." });
+  }
 
   const downloadSubjectFeedback = (subject: string, feedbacksForSubject: Feedback[]) => {
     let csvContent = "data:text/csv;charset=utf-8,Student,Subject,Rating,Comments\n";
@@ -195,8 +208,8 @@ export default function FeedbackPage() {
                             </div>
                             <AccordionContent>
                                 <div className="space-y-4">
-                                    {feedbacksForSubject.map((feedback, index) => (
-                                        <div key={index} className="p-4 border rounded-md bg-muted/20 flex items-start justify-between">
+                                    {feedbacksForSubject.map((feedback) => (
+                                        <div key={feedback.id} className="p-4 border rounded-md bg-muted/20 flex items-start justify-between">
                                             <div>
                                                 <p className="font-bold text-sm">{feedback.studentName}</p>
                                                 <p className="flex items-center gap-2 font-semibold text-sm">
@@ -208,42 +221,61 @@ export default function FeedbackPage() {
                                                 </p>
                                                 <p className="text-muted-foreground mt-1 text-sm">"{feedback.comments}"</p>
                                             </div>
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="secondary" size="sm" onClick={() => handleAnalyze(feedback)}>
-                                                        <BrainCircuit className="mr-2 h-4 w-4" />
-                                                        Analyze
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="sm:max-w-md">
-                                                    <DialogHeader>
-                                                        <DialogTitle>Feedback Analysis</DialogTitle>
-                                                        <DialogDescription>AI-powered suggestions based on student feedback.</DialogDescription>
-                                                    </DialogHeader>
-                                                    {selectedFeedback && (
-                                                        <div className="space-y-4 mt-4">
-                                                            <Card>
-                                                            <CardHeader className="pb-2">
-                                                                <CardTitle className="text-sm">Original Feedback from {selectedFeedback.studentName}</CardTitle>
-                                                            </CardHeader>
-                                                            <CardContent>
-                                                                <p className="text-sm text-muted-foreground"><strong>Rating:</strong> {selectedFeedback.experience}</p>
-                                                                <p className="text-sm text-muted-foreground mt-1"><strong>Comment:</strong> "{selectedFeedback.comments}"</p>
-                                                            </CardContent>
-                                                            </Card>
-                                                            <Card>
-                                                            <CardHeader className="pb-2">
-                                                                <CardTitle className="text-sm flex items-center gap-2"><BrainCircuit className="text-primary"/> AI Suggestions</CardTitle>
-                                                            </CardHeader>
-                                                            <CardContent>
-                                                                {isAnalyzing && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/>Analyzing...</div>}
-                                                                {analysis && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.suggestions}</p>}
-                                                            </CardContent>
-                                                            </Card>
-                                                        </div>
-                                                    )}
-                                                </DialogContent>
-                                            </Dialog>
+                                            <div className="flex items-center gap-2">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="secondary" size="sm" onClick={() => handleAnalyze(feedback)}>
+                                                            <BrainCircuit className="mr-2 h-4 w-4" />
+                                                            Analyze
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-md">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Feedback Analysis</DialogTitle>
+                                                            <DialogDescription>AI-powered suggestions based on student feedback.</DialogDescription>
+                                                        </DialogHeader>
+                                                        {selectedFeedback && (
+                                                            <div className="space-y-4 mt-4">
+                                                                <Card>
+                                                                <CardHeader className="pb-2">
+                                                                    <CardTitle className="text-sm">Original Feedback from {selectedFeedback.studentName}</CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p className="text-sm text-muted-foreground"><strong>Rating:</strong> {selectedFeedback.experience}</p>
+                                                                    <p className="text-sm text-muted-foreground mt-1"><strong>Comment:</strong> "{selectedFeedback.comments}"</p>
+                                                                </CardContent>
+                                                                </Card>
+                                                                <Card>
+                                                                <CardHeader className="pb-2">
+                                                                    <CardTitle className="text-sm flex items-center gap-2"><BrainCircuit className="text-primary"/> AI Suggestions</CardTitle>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    {isAnalyzing && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/>Analyzing...</div>}
+                                                                    {analysis && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{analysis.suggestions}</p>}
+                                                                </CardContent>
+                                                                </Card>
+                                                            </div>
+                                                        )}
+                                                    </DialogContent>
+                                                </Dialog>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive" size="icon">
+                                                          <Trash2 className="h-4 w-4"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>This action cannot be undone. This will permanently delete the feedback from {feedback.studentName}.</AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                          <AlertDialogAction onClick={() => handleDeleteFeedback(feedback.id)}>Delete</AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
