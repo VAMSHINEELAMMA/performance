@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Upload, Clock, CheckCircle, FileUp, Download, Trash2 } from "lucide-react";
+import { FileText, Upload, Clock, CheckCircle, FileUp, Download, Trash2, Undo2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,28 +14,75 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
 
-const initialAssessments = [
-  { id: "calc-midterm", title: "Calculus Midterm", subject: "Mathematics", dueDate: "2024-08-15", status: "Not Submitted", file: null as File | null, score: null },
-  { id: "history-essay", title: "World War II Essay", subject: "History", dueDate: "2024-08-10", status: "Submitted", file: new File([], "history_essay.pdf"), score: 88 },
-  { id: "react-lab", title: "React Components Lab", subject: "Computer Science", dueDate: "2024-08-12", status: "Submitted", file: new File([], "react-lab.pdf"), score: 92 },
-];
+type Assessment = {
+  id: string;
+  title: string;
+  subject: string;
+  dueDate: string;
+  status: "Not Submitted" | "Submitted";
+  file: File | null;
+  score: number | null;
+};
 
-const initialSubmissions = [
-    { student: "John Doe", assessment: "World War II Essay", date: "2024-08-09", file: new File([], "history_essay.pdf") },
-    { student: "Peter Jones", assessment: "Calculus Midterm", date: "2024-08-14", file: new File([], "calculus_midterm.pdf") },
-    { student: "John Doe", assessment: "React Components Lab", date: "2024-08-11", file: new File([], "react-lab.pdf") },
-];
-
+type Submission = {
+    student: string;
+    assessment: string;
+    date: string;
+    file: File;
+};
 
 export default function AssessmentPage() {
-  const [assessments, setAssessments] = useState(initialAssessments);
-  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeAssessment, setActiveAssessment] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [newAssessment, setNewAssessment] = useState({ title: '', subject: '', file: null as File | null});
+
+  useEffect(() => {
+    const savedAssessments = localStorage.getItem('assessments');
+    const savedSubmissions = localStorage.getItem('submissions');
+    if (savedAssessments) {
+        // We can't directly store File objects in JSON, so we'll ignore them on load for this prototype
+        const parsedAssessments = JSON.parse(savedAssessments).map((a: any) => ({...a, file: null}));
+        setAssessments(parsedAssessments);
+    } else {
+        setAssessments([
+          { id: "calc-midterm", title: "Calculus Midterm", subject: "Mathematics", dueDate: "2024-08-15", status: "Not Submitted", file: null as File | null, score: null },
+          { id: "history-essay", title: "World War II Essay", subject: "History", dueDate: "2024-08-10", status: "Submitted", file: null, score: 88 },
+          { id: "react-lab", title: "React Components Lab", subject: "Computer Science", dueDate: "2024-08-12", status: "Submitted", file: null, score: 92 },
+        ]);
+    }
+    if (savedSubmissions) {
+        const parsedSubmissions = JSON.parse(savedSubmissions).map((s: any) => ({...s, file: new File([], s.fileName) }));
+        setSubmissions(parsedSubmissions);
+    } else {
+        setSubmissions([
+            { student: "John Doe", assessment: "World War II Essay", date: "2024-08-09", file: new File([], "history_essay.pdf") },
+            { student: "Peter Jones", assessment: "Calculus Midterm", date: "2024-08-14", file: new File([], "calculus_midterm.pdf") },
+            { student: "John Doe", assessment: "React Components Lab", date: "2024-08-11", file: new File([], "react-lab.pdf") },
+        ]);
+    }
+  }, []);
+
+  useEffect(() => {
+      if(assessments.length > 0) {
+        // We can't stringify the File object, so we create a version without it for storage
+        const assessmentsForStorage = assessments.map(({file, ...rest}) => rest);
+        localStorage.setItem('assessments', JSON.stringify(assessmentsForStorage));
+      }
+  }, [assessments]);
+
+  useEffect(() => {
+      if(submissions.length > 0) {
+        // Create a serializable version of submissions
+        const submissionsForStorage = submissions.map(s => ({...s, fileName: s.file.name, file: undefined}));
+        localStorage.setItem('submissions', JSON.stringify(submissionsForStorage));
+      }
+  }, [submissions]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -63,10 +110,18 @@ export default function AssessmentPage() {
         file: selectedFile
     };
     setSubmissions(prev => [...prev, newSubmission]);
-
+    
+    toast({ title: 'Success', description: 'Your submission has been uploaded.' });
     setSelectedFile(null);
     setActiveAssessment(null);
   };
+  
+  const handleUnsubmit = (assessmentTitle: string) => {
+    if (!user) return;
+    setAssessments(prev => prev.map(a => a.title === assessmentTitle ? {...a, status: "Not Submitted", file: null} : a));
+    setSubmissions(prev => prev.filter(s => !(s.assessment === assessmentTitle && s.student === user.fullName)));
+    toast({ title: 'Submission Retracted', description: 'Your submission has been removed.' });
+  }
 
   const handleDownload = (file: File) => {
     const url = URL.createObjectURL(file);
@@ -81,8 +136,8 @@ export default function AssessmentPage() {
 
   const handleCreateAssessment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAssessment.title || !newAssessment.subject || !newAssessment.file) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Please fill out all fields.'});
+    if (!newAssessment.title || !newAssessment.subject) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Please fill out title and subject.'});
         return;
     }
     const newId = newAssessment.title.toLowerCase().replace(/\s+/g, '-');
@@ -91,7 +146,7 @@ export default function AssessmentPage() {
       title: newAssessment.title,
       subject: newAssessment.subject,
       dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0], // Due in 7 days
-      status: 'Not Submitted',
+      status: 'Not Submitted' as "Not Submitted",
       file: newAssessment.file,
       score: null
     };
@@ -102,18 +157,26 @@ export default function AssessmentPage() {
   }
 
   const handleDeleteAssessment = (assessmentId: string) => {
-    setAssessments(prev => prev.filter(a => a.id !== assessmentId));
-    // Also remove related submissions
     const assessmentToDelete = assessments.find(a => a.id === assessmentId);
     if(assessmentToDelete) {
+      setAssessments(prev => prev.filter(a => a.id !== assessmentId));
       setSubmissions(prev => prev.filter(s => s.assessment !== assessmentToDelete.title));
+      toast({ title: 'Success', description: 'Assessment has been deleted.' });
     }
-    toast({ title: 'Success', description: 'Assessment has been deleted.' });
   }
+
+  const studentAssessments = assessments.map(a => {
+    const submission = submissions.find(s => s.assessment === a.title && s.student === user?.fullName);
+    return {
+        ...a,
+        status: submission ? "Submitted" as const : "Not Submitted" as const,
+        file: submission ? submission.file : null,
+    }
+  })
   
   const studentView = (
     <div className="grid gap-6 mt-6 md:grid-cols-2 lg:grid-cols-3">
-      {assessments.map((assessment) => (
+      {studentAssessments.map((assessment) => (
         <Card key={assessment.id} className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><FileText className="text-primary"/>{assessment.title}</CardTitle>
@@ -134,36 +197,56 @@ export default function AssessmentPage() {
               </div>
             )}
           </CardContent>
-          <CardFooter>
-             <Dialog open={activeAssessment === assessment.title} onOpenChange={(open) => { if (!open) { setActiveAssessment(null); setSelectedFile(null); } }}>
-               <DialogTrigger asChild>
-                  <Button className="w-full" disabled={assessment.status === 'Submitted'} onClick={() => setActiveAssessment(assessment.title)}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    {assessment.status === 'Submitted' ? 'Submitted' : 'Submit Now'}
-                  </Button>
-               </DialogTrigger>
-               <DialogContent className="sm:max-w-[425px]">
-                 <DialogHeader>
-                   <DialogTitle>Upload Submission</DialogTitle>
-                   <DialogDescription>
-                     Select the file for your submission. Click submit when you're done.
-                   </DialogDescription>
-                 </DialogHeader>
-                 <div className="grid gap-4 py-4">
-                   <div className="grid grid-cols-4 items-center gap-4">
-                     <Label htmlFor="submission-file" className="text-right">
-                       File
-                     </Label>
-                     <Input id="submission-file" type="file" className="col-span-3" onChange={handleFileChange} />
-                   </div>
-                 </div>
-                 <DialogFooter>
-                   <Button type="submit" onClick={() => handleSubmit(assessment.title)} disabled={!selectedFile}>
-                     Submit
-                   </Button>
-                 </DialogFooter>
-               </DialogContent>
-             </Dialog>
+          <CardFooter className="flex flex-col gap-2">
+            <Dialog open={activeAssessment === assessment.title} onOpenChange={(open) => { if (!open) { setActiveAssessment(null); setSelectedFile(null); } }}>
+                <DialogTrigger asChild>
+                    <Button className="w-full" disabled={assessment.status === 'Submitted'} onClick={() => setActiveAssessment(assessment.title)}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Submit Now
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                    <DialogTitle>Upload Submission</DialogTitle>
+                    <DialogDescription>
+                        Select the file for your submission. Click submit when you're done.
+                    </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="submission-file" className="text-right">
+                        File
+                        </Label>
+                        <Input id="submission-file" type="file" className="col-span-3" onChange={handleFileChange} />
+                    </div>
+                    </div>
+                    <DialogFooter>
+                    <Button type="submit" onClick={() => handleSubmit(assessment.title)} disabled={!selectedFile}>
+                        Submit
+                    </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {assessment.status === 'Submitted' && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                            <Undo2 className="mr-2 h-4 w-4"/>
+                            Unsubmit
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will delete your submission for "{assessment.title}". You will need to resubmit before the deadline.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleUnsubmit(assessment.title)}>Unsubmit</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
           </CardFooter>
         </Card>
       ))}
@@ -188,7 +271,7 @@ export default function AssessmentPage() {
                      <Input id="assessment-subject" placeholder="e.g., Computer Science" onChange={(e) => setNewAssessment(p => ({...p, subject: e.target.value}))}/>
                    </div>
                    <div className="grid gap-2">
-                     <Label htmlFor="assessment-file">Assessment File</Label>
+                     <Label htmlFor="assessment-file">Assessment File (Optional)</Label>
                      <Input id="assessment-file" type="file" onChange={(e) => setNewAssessment(p => ({...p, file: e.target.files?.[0] || null}))} />
                    </div>
                 </CardContent>
@@ -263,6 +346,11 @@ export default function AssessmentPage() {
                         </TableCell>
                       </TableRow>
                     ))}
+                     {submissions.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">No submissions yet.</TableCell>
+                        </TableRow>
+                     )}
                   </TableBody>
                 </Table>
             </CardContent>

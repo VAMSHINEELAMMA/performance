@@ -1,72 +1,34 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Linkedin, Github, Download, Trash2 } from "lucide-react";
+import { Upload, Linkedin, Github, Download, Trash2, View } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
-
-const initialProjects = [
-  {
-    id: "proj-1",
-    studentName: "John Doe",
-    title: "E-commerce Website",
-    description: "A full-stack e-commerce platform built with Next.js, Stripe, and PostgreSQL.",
-    imageUrl: "https://picsum.photos/600/400?random=1",
-    linkedinUrl: "https://linkedin.com/in/user",
-    githubUrl: "https://github.com/user",
-    projectFile: new File(["dummy zip"], "ecommerce.zip", { type: "application/zip" }),
-    dataAiHint: 'ecommerce website'
-  },
-  {
-    id: "proj-2",
-    studentName: "Jane Smith",
-    title: "Data Visualization Dashboard",
-    description: "An analytics dashboard for visualizing sales data using D3.js and React.",
-    imageUrl: "https://picsum.photos/600/400?random=2",
-    linkedinUrl: "https://linkedin.com/in/user",
-    githubUrl: "https://github.com/user",
-    projectFile: null as File | null,
-    dataAiHint: 'data dashboard'
-  },
-  {
-    id: "proj-3",
-    studentName: "Peter Jones",
-    title: "Mobile Fitness App",
-    description: "A cross-platform mobile app developed with React Native to track workouts and nutrition.",
-    imageUrl: "https://picsum.photos/600/400?random=3",
-    linkedinUrl: "https://linkedin.com/in/user",
-    githubUrl: "https://github.com/user",
-    projectFile: new File(["dummy zip"], "fitness_app.zip", { type: "application/zip" }),
-    dataAiHint: 'fitness app'
-  },
-  {
-    id: "proj-4",
-    studentName: "John Doe",
-    title: "Machine Learning Model",
-    description: "A Python-based model to predict stock market trends using historical data.",
-    imageUrl: "https://picsum.photos/600/400?random=4",
-    linkedinUrl: "https://linkedin.com/in/user",
-    githubUrl: "https://github.com/user",
-    projectFile: null as File | null,
-    dataAiHint: 'machine learning'
-  },
-];
-
-type Project = typeof initialProjects[0];
+type Project = {
+    id: string;
+    studentName: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    linkedinUrl: string;
+    githubUrl: string;
+    projectFile: File | null;
+    dataAiHint: string;
+};
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -78,6 +40,76 @@ export default function ProjectsPage() {
     githubUrl: "",
     projectFile: null as File | null
   });
+
+  useEffect(() => {
+      const savedProjects = localStorage.getItem('projects');
+      if (savedProjects) {
+          const parsedProjects = JSON.parse(savedProjects).map((p: any) => ({
+              ...p,
+              projectFile: p.fileName ? new File([], p.fileName) : null,
+          }));
+          setProjects(parsedProjects);
+      } else {
+          setProjects([
+            {
+                id: "proj-1",
+                studentName: "John Doe",
+                title: "E-commerce Website",
+                description: "A full-stack e-commerce platform built with Next.js, Stripe, and PostgreSQL.",
+                imageUrl: "https://picsum.photos/600/400?random=1",
+                linkedinUrl: "https://linkedin.com/in/user",
+                githubUrl: "https://github.com/user",
+                projectFile: new File(["dummy zip"], "ecommerce.zip", { type: "application/zip" }),
+                dataAiHint: 'ecommerce website'
+              },
+              {
+                id: "proj-2",
+                studentName: "Jane Smith",
+                title: "Data Visualization Dashboard",
+                description: "An analytics dashboard for visualizing sales data using D3.js and React.",
+                imageUrl: "https://picsum.photos/600/400?random=2",
+                linkedinUrl: "https://linkedin.com/in/user",
+                githubUrl: "https://github.com/user",
+                projectFile: null as File | null,
+                dataAiHint: 'data dashboard'
+              },
+              {
+                id: "proj-3",
+                studentName: "Peter Jones",
+                title: "Mobile Fitness App",
+                description: "A cross-platform mobile app developed with React Native to track workouts and nutrition.",
+                imageUrl: "https://picsum.photos/600/400?random=3",
+                linkedinUrl: "https://linkedin.com/in/user",
+                githubUrl: "https://github.com/user",
+                projectFile: new File(["dummy zip"], "fitness_app.zip", { type: "application/zip" }),
+                dataAiHint: 'fitness app'
+              },
+              {
+                id: "proj-4",
+                studentName: "John Doe",
+                title: "Machine Learning Model",
+                description: "A Python-based model to predict stock market trends using historical data.",
+                imageUrl: "https://picsum.photos/600/400?random=4",
+                linkedinUrl: "https://linkedin.com/in/user",
+                githubUrl: "https://github.com/user",
+                projectFile: null as File | null,
+                dataAiHint: 'machine learning'
+              },
+          ]);
+      }
+  }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+        const projectsForStorage = projects.map(p => ({
+            ...p,
+            fileName: p.projectFile?.name,
+            projectFile: undefined,
+        }));
+        localStorage.setItem('projects', JSON.stringify(projectsForStorage));
+    }
+  }, [projects]);
+
 
   const studentProjects = projects.filter(p => p.studentName === user?.fullName);
 
@@ -206,7 +238,10 @@ export default function ProjectsPage() {
             <CardFooter className="flex flex-col sm:flex-row gap-2">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">View Details</Button>
+                  <Button variant="outline" className="w-full">
+                    <View className="mr-2 h-4 w-4" />
+                    View Details
+                  </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
@@ -246,6 +281,26 @@ export default function ProjectsPage() {
                           </Button>
                         )}
                     </div>
+                     <DialogFooter className="mt-4">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/>
+                                    Delete Project
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>This action cannot be undone. This will permanently delete your project "{project.title}".</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteProject(project.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardFooter>
@@ -280,7 +335,10 @@ export default function ProjectsPage() {
             <CardFooter className="flex justify-between items-center gap-2">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">View Details</Button>
+                  <Button variant="outline" className="w-full">
+                     <View className="mr-2 h-4 w-4" />
+                     View Details
+                  </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>

@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ThumbsUp, ThumbsDown, Send, FileDown, BrainCircuit, Loader2, Trash2 } from "lucide-react";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { analyzeStudentFeedback, AnalyzeFeedbackInput, AnalyzeFeedbackOutput } from "@/ai/flows/analyze-feedback-flow";
+import { analyzeStudentFeedback, AnalyzeFeedbackOutput } from "@/ai/flows/analyze-feedback-flow";
 
 type Feedback = {
   id: string;
@@ -23,15 +23,8 @@ type Feedback = {
   comments: string;
 };
 
-const initialFeedbacks: Feedback[] = [
-    { id: 'fb-1', studentName: 'John Doe', subject: 'Calculus Midterm', experience: 'Dislike', comments: 'The midterm was too difficult and the concepts were not covered well in class.' },
-    { id: 'fb-2', studentName: 'Jane Smith', subject: 'React Components Lab', experience: 'Like', comments: 'I really enjoyed this lab, it was very practical and helped me understand React better.' },
-    { id: 'fb-3', studentName: 'Peter Jones', subject: 'Calculus Midterm', experience: 'Like', comments: 'Challenging but fair. I felt prepared.' },
-];
-
-
 export default function FeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>(initialFeedbacks);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [subject, setSubject] = useState("");
   const [experience, setExperience] = useState<"Like" | "Dislike" | null>(null);
   const [comments, setComments] = useState("");
@@ -41,6 +34,25 @@ export default function FeedbackPage() {
   const [analysis, setAnalysis] = useState<AnalyzeFeedbackOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+
+  useEffect(() => {
+    const savedFeedbacks = localStorage.getItem('feedbacks');
+    if (savedFeedbacks) {
+        setFeedbacks(JSON.parse(savedFeedbacks));
+    } else {
+        setFeedbacks([
+            { id: 'fb-1', studentName: 'John Doe', subject: 'Calculus Midterm', experience: 'Dislike', comments: 'The midterm was too difficult and the concepts were not covered well in class.' },
+            { id: 'fb-2', studentName: 'Jane Smith', subject: 'React Components Lab', experience: 'Like', comments: 'I really enjoyed this lab, it was very practical and helped me understand React better.' },
+            { id: 'fb-3', studentName: 'Peter Jones', subject: 'Calculus Midterm', experience: 'Like', comments: 'Challenging but fair. I felt prepared.' },
+        ]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if(feedbacks.length > 0) {
+        localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
+    }
+  }, [feedbacks]);
 
 
   const handleSubmit = () => {
@@ -118,14 +130,16 @@ export default function FeedbackPage() {
     acc[f.subject].push(f);
     return acc;
   }, {} as Record<string, Feedback[]>);
+  
+  const studentFeedbacks = feedbacks.filter(f => f.studentName === user?.fullName);
 
   const studentView = (
-    <div className="flex justify-center items-start pt-10">
-        <Card className="w-full max-w-2xl shadow-xl">
+    <div className="grid md:grid-cols-2 gap-8 pt-6">
+        <Card className="w-full shadow-xl">
         <CardHeader>
-            <CardTitle className="text-2xl font-headline">Submit Your Feedback</CardTitle>
+            <CardTitle className="text-2xl font-headline">Submit New Feedback</CardTitle>
             <CardDescription>
-            We value your opinion. Let us know what you think about your courses or assessments.
+            We value your opinion. Let us know what you think.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -176,12 +190,61 @@ export default function FeedbackPage() {
                 onChange={(e) => setComments(e.target.value)}
             />
             </div>
-
-            <Button className="w-full" onClick={handleSubmit}>
-            <Send className="mr-2 h-4 w-4" />
-            Submit Feedback
-            </Button>
         </CardContent>
+        <CardFooter>
+            <Button className="w-full" onClick={handleSubmit}>
+                <Send className="mr-2 h-4 w-4" />
+                Submit Feedback
+            </Button>
+        </CardFooter>
+        </Card>
+        
+        <Card className="w-full shadow-xl">
+            <CardHeader>
+                <CardTitle>Your Submitted Feedback</CardTitle>
+                <CardDescription>Review or delete your past feedback submissions.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {studentFeedbacks.length > 0 ? (
+                    <div className="space-y-4">
+                        {studentFeedbacks.map((feedback) => (
+                           <div key={feedback.id} className="p-4 border rounded-md bg-muted/20 flex items-start justify-between">
+                                <div>
+                                    <p className="font-bold text-sm">{feedback.subject}</p>
+                                     <p className="flex items-center gap-2 font-semibold text-sm">
+                                        <span className={`flex items-center gap-1 ${feedback.experience === 'Like' ? 'text-green-500' : 'text-red-500'}`}>
+                                            {feedback.experience === 'Like' ? <ThumbsUp className="h-4 w-4"/> : <ThumbsDown className="h-4 w-4"/>}
+                                            {feedback.experience}
+                                        </span>
+                                    </p>
+                                    <p className="text-muted-foreground mt-1 text-sm">"{feedback.comments}"</p>
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>This action cannot be undone. This will permanently delete your feedback for "{feedback.subject}".</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteFeedback(feedback.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                           </div>
+                        ))}
+                    </div>
+                ) : (
+                     <div className="text-center py-12 text-muted-foreground">
+                        <p>You haven't submitted any feedback yet.</p>
+                    </div>
+                )}
+            </CardContent>
         </Card>
     </div>
     );
