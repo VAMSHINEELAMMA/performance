@@ -66,7 +66,7 @@ export function PerformanceForm({ predictStudentPerformance, studentData }: Perf
     try {
       const result = await predictStudentPerformance(data);
       setPrediction(result);
-    } catch (error) => {
+    } catch (error) {
       console.error("Prediction failed:", error);
     } finally {
       setIsLoading(false);
