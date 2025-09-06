@@ -52,11 +52,6 @@ export const navItems: NavItem[] = [
     icon: BookText,
   },
   {
-    title: 'ML Concepts',
-    href: '/concepts',
-    icon: BrainCircuit,
-  },
-  {
     title: 'Games',
     href: '/games',
     icon: Gamepad2,
