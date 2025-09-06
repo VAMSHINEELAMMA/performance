@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -8,7 +9,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ClassificationDemoInputSchema = z.object({
+const ClassificationDemoInputSchema = z.object({
   queryText: z
     .string()
     .min(10)
@@ -26,7 +27,7 @@ const possibleCategories = [
   'Social Inquiry',
 ] as const;
 
-export const ClassificationDemoOutputSchema = z.object({
+const ClassificationDemoOutputSchema = z.object({
   category: z
     .enum(possibleCategories)
     .describe('The most likely category for the student query.'),

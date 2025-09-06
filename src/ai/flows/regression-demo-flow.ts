@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -8,7 +9,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const RegressionDemoInputSchema = z.object({
+const RegressionDemoInputSchema = z.object({
   hoursStudied: z
     .number()
     .min(0)
@@ -17,7 +18,7 @@ export const RegressionDemoInputSchema = z.object({
 });
 export type RegressionDemoInput = z.infer<typeof RegressionDemoInputSchema>;
 
-export const RegressionDemoOutputSchema = z.object({
+const RegressionDemoOutputSchema = z.object({
   predictedScore: z
     .number()
     .describe('The predicted exam score, between 0 and 100.'),
